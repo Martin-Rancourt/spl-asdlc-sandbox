@@ -25,3 +25,28 @@ mod tests {
         assert_eq!(greet("  "), "Hello, world!");
     }
 }
+
+/// The farewell for `name`; a blank name says goodbye to the world.
+pub fn farewell(name: &str) -> String {
+    let name = name.trim();
+    if name.is_empty() {
+        "Goodbye, world!".to_string()
+    } else {
+        format!("Goodbye, {name}!")
+    }
+}
+
+#[cfg(test)]
+mod farewell_tests {
+    use super::farewell;
+
+    #[test]
+    fn says_goodbye_to_a_name() {
+        assert_eq!(farewell("sandbox"), "Goodbye, sandbox!");
+    }
+
+    #[test]
+    fn a_blank_name_says_goodbye_to_the_world() {
+        assert_eq!(farewell(" "), "Goodbye, world!");
+    }
+}
