@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.2.1...v0.3.0) (2026-10-12)
+
+
+### Features
+
+* the sandbox counts down (SID-1060) ([#5](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/5)) ([9f75a27](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/9f75a2749a04cd63b59058ca4393dd4f8d9483a7))
+
 ## [0.2.1](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 
