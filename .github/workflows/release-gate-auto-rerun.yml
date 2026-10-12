@@ -1,0 +1,24 @@
+name: release-gate-auto-rerun
+
+# Caller of asdlc-release-gate-auto-rerun.yml (spl-asdlc's
+# docs/setup/examples/release-gate-auto-rerun.yml), at the method's latest
+# main. A `workflow_run` trigger cannot live in a reusable workflow, so this
+# file owns it; GitHub runs it from the default branch. It reruns a red gate
+# run once, at its first attempt, when its suites never reported or every
+# failed suite is an unexpired known flake. `workflows:` names the gate
+# caller by its `name:`.
+
+on:
+  workflow_run:
+    workflows: [release-gate]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  rerun:
+    permissions:
+      contents: read
+      actions: write
+    uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-release-gate-auto-rerun.yml@main

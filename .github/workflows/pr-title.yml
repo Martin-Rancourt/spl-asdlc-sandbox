@@ -1,0 +1,27 @@
+name: pr-title
+
+# Caller of asdlc-pr-title.yml (spl-asdlc's docs/setup/examples/pr-title.yml),
+# at the method's latest main: the sandbox runs staging. A workflow of its
+# own, never a job of pr.yml: it re-runs on `edited`, and an edit in pr.yml's
+# concurrency group would cancel the test run. No `if:` anywhere: a skipped
+# title check would read green.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches: [main, 'release/**']
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  title:
+    permissions: {}
+    uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-pr-title.yml@main
+    with:
+      title: ${{ github.event.pull_request.title }}
+      head-ref: ${{ github.event.pull_request.head.ref }}
+      base-ref: ${{ github.event.pull_request.base.ref }}

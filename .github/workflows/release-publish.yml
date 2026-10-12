@@ -1,0 +1,103 @@
+name: release-publish
+
+# Caller of asdlc-release-publish.yml (spl-asdlc's
+# docs/setup/examples/release-publish.yml), at the method's latest main,
+# called twice with the project's publication between the calls:
+#
+#   verify -> publish (prints the version) -> close
+#
+# The sandbox ships nothing, so its publication only prints the version
+# verify certified. A single component: record-deployed, the ledger the
+# bridge reads for a multi-component product, is not called.
+#
+# The trigger is the GitHub release that release-please creates as the
+# bridge's App. A dispatch either resumes (`release-tag` certified by the RC
+# tag `resume-from`) or, with `replay` on the release branch, merges the
+# branch back into main and publishes nothing.
+#
+# verify and close get the same read permissions: a called job holds at most
+# the permissions of the job that calls it, and `verify` reads Actions runs
+# and pull requests. Their writes go through the App token.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: The published release tag to resume; empty on a replay.
+        type: string
+        default: ''
+      resume-from:
+        description: The RC tag that certifies the release resumed; empty otherwise.
+        type: string
+        default: ''
+      replay:
+        description: Merge the release branch back only; dispatch on that branch.
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.replay) }}
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-release-publish.yml@main
+    with:
+      stage: verify
+      release-tag: ${{ github.event.release.tag_name || inputs.release-tag }}
+      resume-from: ${{ inputs.resume-from }}
+      candidate-tag: v{version}-rc.{rc}
+      release-tag-pattern: v{version}
+      # As `[release] bookkeeping_paths` in spl-asdlc.toml.
+      bookkeeping-paths: '[".release-please-manifest.json", "CHANGELOG.md", "Cargo.toml", "Cargo.lock"]'
+      # As `[release] record` (its default) and the keys of
+      # `[[release.angles]]`: none, the release has no QA angle.
+      qa-record: .spl-asdlc/qa/{candidate}/
+      qa-angles: '[]'
+      # The slug of the bridge's App. The release-please PR must have been
+      # merged by this App or by a person; any other bot is no GO.
+      go-merger-login: spl-asdlc
+
+  # The publication: the sandbox ships nothing, so it prints the version.
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Publish (nothing to ship)
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+          RC_TAG: ${{ needs.verify.outputs.rc-tag }}
+          DEPLOY_SHA: ${{ needs.verify.outputs.deploy-sha }}
+        run: echo "spl-asdlc-sandbox $VERSION, certified by $RC_TAG at $DEPLOY_SHA"
+
+  # Always called: its `closing-guard` turns a close that did not run after a
+  # publication into a red run.
+  close:
+    needs: [verify, publish]
+    if: ${{ always() }}
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-release-publish.yml@main
+    with:
+      stage: close
+      release-tag: ${{ github.event.release.tag_name || inputs.release-tag }}
+      resume-from: ${{ inputs.resume-from }}
+      replay: ${{ inputs.replay || false }}
+      publish-result: ${{ needs.publish.result }}
+    secrets:
+      SPL_ASDLC_APP_ID: ${{ secrets.SPL_ASDLC_APP_ID }}
+      SPL_ASDLC_APP_PRIVATE_KEY: ${{ secrets.SPL_ASDLC_APP_PRIVATE_KEY }}

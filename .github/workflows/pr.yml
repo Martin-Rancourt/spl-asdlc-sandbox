@@ -1,0 +1,109 @@
+name: pr
+
+# Caller of asdlc-pr-guards.yml and of the required-check action (spl-asdlc's
+# docs/setup/examples/pr.yml), at the method's latest main, with this
+# project's CI: rustfmt, clippy and the tests. The ruleset requires one
+# context, `required-check`; the title check lives in pr-title.yml.
+#
+# No path filter: a required check that never reports can never be
+# satisfied. The concurrency key holds the draft state, so the ready run
+# never cancels itself against the draft one. Every job of this file is a
+# need of `required-check`, and only the jobs listed in `may-skip` may be
+# skipped: the Rust jobs on a prose-only PR, on release-please's PRs (guards
+# reports no code) and, for clippy and the tests, on drafts.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, 'release/**']
+
+concurrency:
+  group: pr-${{ github.ref }}-${{ github.event.pull_request.draft }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    permissions:
+      contents: read
+    uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-pr-guards.yml@main
+    with:
+      base-sha: ${{ github.event.pull_request.base.sha }}
+      head-sha: ${{ github.event.pull_request.head.sha }}
+      head-ref: ${{ github.event.pull_request.head.ref }}
+      base-ref: ${{ github.event.pull_request.base.ref }}
+      head-repo: ${{ github.event.pull_request.head.repo.full_name }}
+      # The same list as the gate's (release-gate.yml). The project's checks
+      # are jobs of their own.
+      guard-commands: '[]'
+
+  fmt:
+    name: rustfmt
+    needs: guards
+    if: needs.guards.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  clippy:
+    name: clippy
+    needs: guards
+    if: needs.guards.outputs.code == 'true' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+          components: clippy
+      - run: cargo clippy --all-targets --locked -- -D warnings
+
+  test:
+    name: test
+    needs: guards
+    if: needs.guards.outputs.code == 'true' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: stable
+      - run: cargo test --locked
+
+  required-check:
+    name: required-check
+    if: always()
+    needs: [guards, fmt, clippy, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: Martin-Rancourt/spl-asdlc/actions/required-check@main
+        with:
+          needs: ${{ toJSON(needs) }}
+          may-skip: fmt,clippy,test
