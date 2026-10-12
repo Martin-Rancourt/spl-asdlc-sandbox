@@ -1,0 +1,55 @@
+# spl-asdlc.toml: the configuration of the sandbox (spl-asdlc's
+# docs/spec/08-configuration.md), from the method's light template plus its
+# layer 2, the release cycle with its gate and no QA angle.
+#
+# The method's shape only. The identities of the installation that runs the
+# bridge on this repository are in its instance overlay on that host
+# (`spl-asdlc.instance.toml`, ignored by git), never here: the repository
+# slug (`product.repository`), the owner (`[owner]`), the tracker team, its
+# service identity and team keys (`tracker.team`, `tracker.service_identity`,
+# `tracker.team_keys`), and the App that runs release-please
+# (`release.release_please_authors`). A key set in both files is an error.
+#
+# Keys commented out show their default; uncomment one only to change it. An
+# unknown key, a wrong type or a repeated list entry makes the file invalid.
+
+schema = 1
+
+[product]
+name = "spl-asdlc-sandbox"             # lower-case letters, digits, hyphens; used in labels and release issue titles
+
+[tracker]
+kind = "linear"                        # "linear" | "livela"
+# link_fallback = "none"               # "none" | "body-url"
+# No status mapping: the tracker names each canonical status exactly so.
+
+[review]
+# merge_method = "squash"              # "squash" | "merge"
+# A light project merges a PR without first bringing it up to date with the
+# default branch.
+require_up_to_date = false
+# diff_size_extra_angle = 0            # changed lines above which diff_size_angle is added; 0 adds none
+# human_approval = "never"             # "never" | "sensitive-paths" | "always"
+
+# No PR review (spec 04 §11), an explicit choice: no PR gets an angle, and
+# each merges on its CI (contract complete, checks green, business-rule
+# guard) with no round and no approval.
+angles = []
+
+# The release cycle with its gate (spec 05; the template's layer 2). Merged
+# tickets wait To Deploy for a release; with `angles = []` the release has no
+# QA angle and its GO rests on the gate. The callers in .github/workflows/
+# pass the same tag patterns and bookkeeping paths.
+[release]
+candidate_tag = "v{version}-rc.{rc}"   # {version} once, {rc} once
+release_tag = "v{version}"
+branch_prefix = "release/"
+# release-please's rust type bumps the version in Cargo.toml and Cargo.lock.
+bookkeeping_paths = [".release-please-manifest.json", "CHANGELOG.md", "Cargo.toml", "Cargo.lock"]
+angles = []                            # no QA angle
+
+# [bridge]
+# poll_minutes = 5
+# github_identity = "app"              # "app" | "token"
+# sweep_hours = 24
+# hands_off_label = "spl-asdlc:hands-off" # an item or PR carrying it is left to people
