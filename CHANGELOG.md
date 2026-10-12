@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.2.0...v0.2.1) (2026-10-12)
+
+
+### Continuous Integration
+
+* the release cycle without release-please (SID-1058) ([#4](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/4)) ([02175c6](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/02175c6b1d011272ab65367806c32eeb0b53c797))
+
 ## [0.2.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.1.0...v0.2.0) (2026-10-12)
 
 
