@@ -1,6 +1,6 @@
 # The end-to-end scenario
 
-Two parts, run in order against the **staging** bridge (the latest `main` of spl-asdlc): (a) a ticket goes from Ready to merged and To Deploy; (b) a release cycle ships it and closes it Done. Each step gives the gesture, what the bridge must do, and what to check. A step whose expected behaviour does not happen is a finding against spl-asdlc's `main`: note it, with the tick log lines, before going further.
+Three parts, run in order against the **staging** bridge (the latest `main` of spl-asdlc): (a) a ticket goes from Ready to merged and To Deploy; (b) a release cycle ships it and closes it Done; (c) a PR merged to `main` while a cycle is open appears in the next release's notes. Each step gives the gesture, what the bridge must do, and what to check. A step whose expected behaviour does not happen is a finding against spl-asdlc's `main`: note it, with the tick log lines, before going further.
 
 The gestures by hand and what follows each are spl-asdlc's `docs/setup/manual-gestures.md`; the statuses are its `docs/spec/03-vocabulary.md`.
 
@@ -9,6 +9,7 @@ The gestures by hand and what follows each are spl-asdlc's `docs/setup/manual-ge
 Once per sandbox, by the owner:
 
 - The GitHub App is installed on this repository, and the secrets `SPL_ASDLC_APP_ID` and `SPL_ASDLC_APP_PRIVATE_KEY` are set (spl-asdlc's `docs/setup/github-app.md`).
+- spl-asdlc's rolling `staging` prerelease holds the Linux binary and its `SHA256SUMS` (its `staging.yml`, on every push to its `main`): the cut's `open` downloads it with the App's token (`spl-asdlc-version: staging`) to run `release prepare`.
 - The rulesets of `docs/setup/repository.md`: `main` and `release/**` require a PR and the status check `required-check`, block force pushes, the App on the bypass list; a tag ruleset blocks updates and deletions on `refs/tags/v*` (the candidates and the releases).
 - The tracker's GitHub integration sees this repository, so that a branch or PR named after a ticket is linked to it (`[tracker] link_fallback` is `none`).
 - On the bridge's host, the sandbox instance: its own directory with a clone of this repository (pulled before each tick), the **staging** binary, its timer, the existing credentials, and the instance overlay `spl-asdlc.instance.toml` beside the clone's `spl-asdlc.toml`:
@@ -26,9 +27,6 @@ Once per sandbox, by the owner:
   team = "<TEAM>"
   service_identity = "<the bridge's service account>"
   team_keys = ["<TEAM>"]
-
-  [release]
-  release_please_authors = ["app/<app slug>"]
   ```
 
 The shell variables the commands below use:
@@ -186,6 +184,8 @@ The tick log holds the merge decision and the transition, each once.
 
 ### 4. Open the cycle
 
+To see the version and the notes first, in the clone, up to date with `main`, with the staging binary: `spl-asdlc release prepare --repository "$REPO" --dry-run --notes ../notes.md` (prints `version=`, `tag=` and `previous-tag=`, writes only the notes). Then:
+
 ```sh
 gh workflow run release-cut.yml --repo "$REPO" --ref main -f action=open
 # or, on the host: spl-asdlc release cut --file "$CFG" --product "$P" --open
@@ -194,15 +194,16 @@ gh run watch --repo "$REPO" "$(gh run list --repo "$REPO" --workflow release-cut
 
 **Expected on GitHub, with no gesture**:
 
-1. `release-cut` (open) pushes `release/<YYYY-MM-DD-HH-MM>-utc` from `main` and ends.
-2. That push starts `release-please`, which opens its PR into the release branch as the App: title `chore(release/<stamp>-utc): release spl-asdlc-sandbox <version>`, label `autorelease: pending`, the version bumped in `Cargo.toml`, `Cargo.lock`, the manifest and `CHANGELOG.md` (a `feat` since 0.1.0: `0.2.0`). Its `pr` run skips the Rust jobs (guards reports no code) and `required-check` is green.
-3. release-please's green run starts `release-cut` again (`workflow_run`), which cuts the first candidate: the tag `v<version>-rc.1` on the release branch.
-4. The tag starts `release-gate`: the build, then the suite `test` on the exact candidate. Green. `release-gate-auto-rerun` runs after it and reruns nothing.
+1. `release-cut` (open) downloads the `staging` binary of spl-asdlc, checks it against the release's `SHA256SUMS`, creates `release/<YYYY-MM-DD-HH-MM>-utc` from `main` and runs `spl-asdlc release prepare` on it: the version computed from the commits since the last release `v<X.Y.Z>` (a `feat` among them bumps the minor, before 1.0), written into `Cargo.toml` and `Cargo.lock`, and the version's section added at the top of `CHANGELOG.md` (release-please's format: the heading with its compare link, one section per type, each entry with its PR and commit links). It commits `chore(release): v<version>` and pushes the branch with the first candidate `v<version>-rc.1` on that commit, in one push. No PR, no other workflow: the run's summary gives the version, the tag and the release class.
+2. The tag starts `release-gate`: the build, then the suite `test` on the exact candidate, the prepared `CHANGELOG.md` in the evidence pack. Green. `release-gate-auto-rerun` runs after it and reruns nothing.
 
 ```sh
+git fetch origin --tags
 B=$(git ls-remote --heads origin 'release/*' | sed 's#.*refs/heads/##' | tail -n 1)
-gh pr list --repo "$REPO" --base "$B" --label "autorelease: pending"
-git ls-remote --tags origin 'v*-rc.*'
+git log -1 --format='%s' "origin/$B"                     # chore(release): v<version>
+git ls-remote --tags origin 'v*-rc.*'                    # v<version>-rc.1 on that commit
+git show "origin/$B:Cargo.toml" | grep '^version'        # the new version
+git show "origin/$B:CHANGELOG.md" | awk '/^## \[/ {n++} n == 1'   # its section on top, the ticket's PR listed
 gh run list --repo "$REPO" --workflow release-gate.yml --limit 1
 ```
 
@@ -213,18 +214,16 @@ spl-asdlc release status --file "$CFG" --product "$P"   # on the host: the GO an
 show "$ID"                                              # To Deploy, with the release label
 ```
 
-### 5. GO: the bridge merges the release-please PR
+### 5. GO: the bridge tags and publishes the release
 
-**Expected, next tick** once the gate is green: `release status` reads GO (gate green, no blocker, no QA angle, nothing on the branch since the candidate but bookkeeping), and the bridge **merges the release-please PR** into the release branch, as the App.
+**Expected, next tick** once the gate is green: `release status` reads GO (gate green, no blocker, no QA angle, the candidate the release branch's tip), and the bridge, as the App, **creates the annotated tag `v<version>`** on the candidate's own commit (`Release v<version>`, naming `v<version>-rc.1`), then **publishes the GitHub release** `v<version>`, titled `spl-asdlc-sandbox <version>`, its notes the version's CHANGELOG section read at the candidate. A second tick tags and publishes nothing more.
 
-Then, on GitHub, with no gesture:
-
-1. The merge pushes the release branch: `release-please` runs again and creates the GitHub **release** `v<version>` as the App (its `release-cut` follow-up finds nothing to cut and ends green, with a notice).
-2. The release starts `release-publish`: **verify** (the release-please PR merged by the App, the release equal to `v<version>-rc.1` but for the bookkeeping paths), **publish** (prints `spl-asdlc-sandbox <version>, certified by v<version>-rc.1 at <sha>`), **close** (opens the merge-back PR from the release branch into `main`, waits for its `required-check`, merges it as a merge commit through the App, deletes the release branch).
+Then, on GitHub, with no gesture, the release starts `release-publish`: **verify** (the candidate's gate green, the release tag on `v<version>-rc.1`'s commit, the release published by the App: `go-published-by-kind` in its summary), **publish** (prints `spl-asdlc-sandbox <version>, certified by v<version>-rc.1 at <sha>`), **close** (opens the merge-back PR from the release branch into `main`, waits for its `required-check`, merges it as a merge commit through the App, deletes the release branch).
 
 ```sh
-gh pr view --repo "$REPO" <release-please PR> --json state,mergedBy --jq '{state, by: .mergedBy.login}'
-gh release view --repo "$REPO" "v<version>"
+git fetch origin --tags
+test "$(git rev-parse "v<version>^{commit}")" = "$(git rev-parse "v<version>-rc.1^{commit}")" && echo "the release is the candidate"
+gh release view --repo "$REPO" "v<version>" --json name,author,body --jq '{name, by: .author.login}'
 gh run list --repo "$REPO" --workflow release-publish.yml --limit 1
 gh pr list --repo "$REPO" --base main --state merged --limit 1     # the merge-back, a merge commit
 git ls-remote --heads origin 'release/*'                           # empty
@@ -232,7 +231,7 @@ git ls-remote --heads origin 'release/*'                           # empty
 
 ### 6. Closure
 
-**Expected, next tick** after the release is published and the merge back merged: the **closure**. The embarked ticket `$ID`, To Deploy with every box ticked, goes **Done**; the release note is posted; the release issue is closed with its summary. Then the **archiving**: the ticket Done, then the release issue last, both archived (searchable and restorable in Linear).
+**Expected, next tick** after the release is published and the merge back merged: the **closure**. The embarked ticket `$ID`, To Deploy with every box ticked, goes **Done**; the release note is posted; the release issue is closed with its summary, which says who published the release (the App). Then the **archiving**: the ticket Done, then the release issue last, both archived (searchable and restorable in Linear).
 
 ```sh
 show "$ID"                                              # Done, archivedAt set
@@ -242,6 +241,49 @@ tail -n 30 "$LOG" | jq -c '{when, object, action, outcome}'
 ```
 
 A second tick writes nothing (every write is idempotent): the tick log gets no new line.
+
+## (c) A PR merged to main during a cycle is in the next release's notes
+
+The cut prepares the notes along the git graph, never by date: a PR merged into `main` while a cycle is open is not in that cycle's release, and is in the next one's notes. Part (c) rides on (b)'s cycle: step 7 happens while it is open, step 8 after its closure.
+
+### 7. While the cycle is open, merge a second ticket into main
+
+Between step 4 and step 5 (the release branch exists, its release is not published), run steps 1 to 3 of part (a) again with a second ticket of the same shape: another small function and its unit tests (for instance `wave(name)` returning `Hi, <name>!`), a `feat` title naming the ticket. Those steps reuse `ID` and `BRANCH`, and step 2 starts from the existing clone (`git switch main && git pull` instead of the clone), so keep the first ticket aside:
+
+```sh
+ID1=$ID
+# steps 1 to 3 with the second ticket, until the bridge has merged its PR
+ID2=$ID
+PR2=$(gh pr view --repo "$REPO" "$BRANCH" --json number --jq .number)
+ID=$ID1                                                 # steps 5 and 6 follow the first ticket
+```
+
+**Expected**: the bridge merges the PR into `main` as in step 3, while the cycle runs on; the ticket `$ID2` goes **To Deploy**. It is not embarked in the open cycle: the release branch was cut before it, so its commit is not in the candidate's range, and the release issue and the brief do not list it. The open cycle goes on through steps 5 and 6 untouched; at its closure, `$ID2` stays To Deploy (its PR is not in that release's range).
+
+```sh
+git fetch origin
+git merge-base --is-ancestor "$(gh pr view --repo "$REPO" "$PR2" --json mergeCommit --jq .mergeCommit.oid)" "origin/$B" || echo "not in the open cycle"
+show "$ID2"                                             # To Deploy, without the open release's label
+```
+
+### 8. The next cycle lists it
+
+After step 6 (the release `v<version>` published, the merge back merged), open the next cycle as in step 4:
+
+```sh
+gh workflow run release-cut.yml --repo "$REPO" --ref main -f action=open
+```
+
+**Expected**: the cut prepares `v<next>` from the commits since `v<version>`, which hold `$PR2`'s squash commit (the merge back brought `v<version>`'s commits into `main`, and the range leaves them out). The new section of `CHANGELOG.md` lists `$PR2` under **Features**, with its PR link, and nothing that `v<version>` already shipped. The bridge creates the release issue and labels `$ID2` with `release/spl-asdlc-sandbox-v<next>`; the brief lists it.
+
+```sh
+git fetch origin --tags
+B2=$(git ls-remote --heads origin 'release/*' | sed 's#.*refs/heads/##' | tail -n 1)
+git show "origin/$B2:CHANGELOG.md" | awk '/^## \[/ {n++} n == 1' | grep "#$PR2"   # the PR, in the new section
+show "$ID2"                                                                        # To Deploy, with the new release's label
+```
+
+Then finish this cycle as steps 5 and 6: `$ID2` goes **Done** at its closure.
 
 ## Cleanup
 
