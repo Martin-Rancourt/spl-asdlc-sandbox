@@ -65,6 +65,7 @@ jobs:
       suites: >-
         [{"id": "test", "run": "cargo test --locked 2>&1 | tee \"$EVIDENCE_DIR/cargo-test.log\"; grep -c '^test .* ok$' \"$EVIDENCE_DIR/cargo-test.log\" > \"$EVIDENCE_DIR/tests-passed.json\"",
           "expect-nonempty": {"file": "tests-passed.json", "count": "."}}]
+      # The CHANGELOG the cut prepared, copied into the evidence pack.
       changelog-path: CHANGELOG.md
       # The same list as pr.yml's guards.
       guard-commands: '[]'
