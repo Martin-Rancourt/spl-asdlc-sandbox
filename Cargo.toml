@@ -1,0 +1,11 @@
+[package]
+name = "spl-asdlc-sandbox"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A tiny project on which the SPL-ASDLC flow is exercised end to end."
+publish = false
+
+[lib]
+name = "spl_asdlc_sandbox"
+path = "src/lib.rs"
