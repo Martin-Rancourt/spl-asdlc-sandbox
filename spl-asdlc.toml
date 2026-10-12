@@ -7,8 +7,7 @@
 # (`spl-asdlc.instance.toml`, ignored by git), never here: the repository
 # slug (`product.repository`), the owner (`[owner]`), the tracker team, its
 # service identity and team keys (`tracker.team`, `tracker.service_identity`,
-# `tracker.team_keys`), and the App that runs release-please
-# (`release.release_please_authors`). A key set in both files is an error.
+# `tracker.team_keys`). A key set in both files is an error.
 #
 # Keys commented out show their default; uncomment one only to change it. An
 # unknown key, a wrong type or a repeated list entry makes the file invalid.
@@ -39,13 +38,15 @@ angles = []
 # The release cycle with its gate (spec 05; the template's layer 2). Merged
 # tickets wait To Deploy for a release; with `angles = []` the release has no
 # QA angle and its GO rests on the gate. The callers in .github/workflows/
-# pass the same tag patterns and bookkeeping paths.
+# pass the same tag patterns. The cut's `release prepare` writes each
+# version into Cargo.toml and Cargo.lock natively and the CHANGELOG with the
+# default sections, and commits them before rc.1: no
+# `[[release.version_files]]`, no `[[release.changelog_sections]]`, and no
+# bookkeeping path (`bookkeeping_paths` keeps its default, `[]`).
 [release]
 candidate_tag = "v{version}-rc.{rc}"   # {version} once, {rc} once
 release_tag = "v{version}"
 branch_prefix = "release/"
-# release-please's rust type bumps the version in Cargo.toml and Cargo.lock.
-bookkeeping_paths = [".release-please-manifest.json", "CHANGELOG.md", "Cargo.toml", "Cargo.lock"]
 angles = []                            # no QA angle
 
 # [bridge]

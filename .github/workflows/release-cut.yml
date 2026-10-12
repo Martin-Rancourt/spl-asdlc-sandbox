@@ -8,11 +8,13 @@ name: release-cut
 # action=candidate`, never `--ref main`). Run by hand, `dry_run` prints the
 # plan and pushes nothing.
 #
-# `open` pushes the release branch and ends; the first candidate is cut when
-# the release-please run that push starts has succeeded (`workflow_run`, which
-# names the release-please workflow by its `name:`, and which GitHub runs from
-# the default branch). The tag patterns and the component are those of
-# spl-asdlc.toml and release-please-config.json.
+# `open` creates the release branch, prepares the release on it with the
+# `spl-asdlc` binary of the `staging` channel (the sandbox runs the method's
+# latest main; `spl-asdlc release prepare`: the version in Cargo.toml and
+# Cargo.lock and the CHANGELOG section, from the commits since the last
+# release), commits `chore(release): v<X.Y.Z>` and pushes the branch with
+# its first candidate, rc.1. It waits for no other workflow. The tag
+# patterns are those of spl-asdlc.toml.
 
 on:
   workflow_dispatch:
@@ -37,16 +39,12 @@ on:
         type: string
         default: ''
       dry_run:
-        description: Print the plan; create, tag and push nothing.
+        description: Print the plan; create, commit, tag and push nothing.
         type: boolean
         default: false
-  workflow_run:
-    workflows: [release-please]
-    types: [completed]
-    branches: ['release/**']
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_run' && 'release-cut-after-release-please' || 'release-cut' }}
+  group: release-cut
   cancel-in-progress: false
 
 permissions:
@@ -54,20 +52,20 @@ permissions:
 
 jobs:
   release:
-    # A failed release-please run is its own signal: nothing to cut on it.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
     uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-release-cut.yml@main
     with:
-      action: ${{ github.event_name == 'workflow_run' && 'candidate' || inputs.action }}
+      action: ${{ inputs.action }}
       class: ${{ inputs.class }}
       routine-because: ${{ inputs.routine_because }}
       main-merge-because: ${{ inputs.main_merge_because }}
       dry-run: ${{ inputs.dry_run == true }}
       candidate-tag: v{version}-rc.{rc}
       release-tag: v{version}
-      component: spl-asdlc-sandbox
+      spl-asdlc-repository: Martin-Rancourt/spl-asdlc
+      # The method's sandbox runs the staging build, as its bridge does.
+      spl-asdlc-version: staging
     secrets:
       SPL_ASDLC_APP_ID: ${{ secrets.SPL_ASDLC_APP_ID }}
       SPL_ASDLC_APP_PRIVATE_KEY: ${{ secrets.SPL_ASDLC_APP_PRIVATE_KEY }}

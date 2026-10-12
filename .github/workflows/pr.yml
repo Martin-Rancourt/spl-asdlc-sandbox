@@ -9,8 +9,8 @@ name: pr
 # satisfied. The concurrency key holds the draft state, so the ready run
 # never cancels itself against the draft one. Every job of this file is a
 # need of `required-check`, and only the jobs listed in `may-skip` may be
-# skipped: the Rust jobs on a prose-only PR, on release-please's PRs (guards
-# reports no code) and, for clippy and the tests, on drafts.
+# skipped: the Rust jobs on a prose-only PR (guards reports no code) and,
+# for clippy and the tests, on drafts.
 
 on:
   pull_request:
