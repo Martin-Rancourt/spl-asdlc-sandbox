@@ -50,3 +50,23 @@ mod farewell_tests {
         assert_eq!(farewell(" "), "Goodbye, world!");
     }
 }
+
+/// `n, n-1, …, 1`; empty for zero.
+pub fn countdown(n: u32) -> Vec<u32> {
+    (1..=n).rev().collect()
+}
+
+#[cfg(test)]
+mod countdown_tests {
+    use super::countdown;
+
+    #[test]
+    fn counts_down_to_one() {
+        assert_eq!(countdown(3), vec![3, 2, 1]);
+    }
+
+    #[test]
+    fn zero_counts_nothing() {
+        assert!(countdown(0).is_empty());
+    }
+}
