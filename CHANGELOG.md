@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.3.0...v0.4.0) (2026-10-15)
+
+
+### Features
+
+* the sandbox says thank you (SID-1092) ([#9](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/9)) ([7c1ec4f](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/7c1ec4f09f5d25106582ba338e7af5ebda908412))
+
+
+### Documentation
+
+* the README points to the scenario (SID-1093) ([#10](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/10)) ([ffd06bd](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/ffd06bdcce660d14ceea88d909d92ebe0b4dfa91))
+
+
+### Chores
+
+* the method's layout, .spl-asdlc/ (config, business rules) ([#8](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/8)) ([9150688](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/915068850b34f60507cf97dcaf329fe97a4f40a8))
+
 ## [0.3.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.2.1...v0.3.0) (2026-10-12)
 
 
