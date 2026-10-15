@@ -1,5 +1,7 @@
 # spl-asdlc-sandbox
 
+The end-to-end scenario, step by step: [`SCENARIO.md`](SCENARIO.md).
+
 The sandbox where the [SPL-ASDLC](https://github.com/Martin-Rancourt/spl-asdlc) flow is exercised end to end, before each release of the bridge, against a **staging** build of it: the latest `main` of spl-asdlc. A flow bug found here never blocks its own fix, since spl-asdlc does not run its own flow.
 
 What it holds:
