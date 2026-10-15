@@ -70,3 +70,28 @@ mod countdown_tests {
         assert!(countdown(0).is_empty());
     }
 }
+
+/// The thanks for `name`; a blank name thanks the world.
+pub fn thank(name: &str) -> String {
+    let name = name.trim();
+    if name.is_empty() {
+        "Thank you, world!".to_string()
+    } else {
+        format!("Thank you, {name}!")
+    }
+}
+
+#[cfg(test)]
+mod thank_tests {
+    use super::thank;
+
+    #[test]
+    fn thanks_a_name() {
+        assert_eq!(thank("sandbox"), "Thank you, sandbox!");
+    }
+
+    #[test]
+    fn a_blank_name_thanks_the_world() {
+        assert_eq!(thank(" "), "Thank you, world!");
+    }
+}
