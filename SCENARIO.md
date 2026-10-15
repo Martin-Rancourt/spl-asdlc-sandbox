@@ -2,7 +2,7 @@
 
 Three parts, run in order against the **staging** bridge (the latest `main` of spl-asdlc): (a) a ticket goes from Ready to merged and To Deploy; (b) a release cycle ships it and closes it Done; (c) a PR merged to `main` while a cycle is open appears in the next release's notes. Each step gives the gesture, what the bridge must do, and what to check. A step whose expected behaviour does not happen is a finding against spl-asdlc's `main`: note it, with the tick log lines, before going further.
 
-The gestures by hand and what follows each are spl-asdlc's `docs/setup/manual-gestures.md`; the statuses are its `docs/spec/03-vocabulary.md`.
+The gestures by hand and what follows each are spl-asdlc's `docs/setup/manual-gestures.md`; the statuses are its `docs/reference/03-vocabulary.md`.
 
 ## Before the first run
 
@@ -12,7 +12,7 @@ Once per sandbox, by the owner:
 - spl-asdlc's rolling `staging` prerelease holds the Linux binary and its `SHA256SUMS` (its `staging.yml`, on every push to its `main`): the cut's `open` downloads it with the App's token (`spl-asdlc-version: staging`) to run `release prepare`.
 - The rulesets of `docs/setup/repository.md`: `main` and `release/**` require a PR and the status check `required-check`, block force pushes, the App on the bypass list; a tag ruleset blocks updates and deletions on `refs/tags/v*` (the candidates and the releases).
 - The tracker's GitHub integration sees this repository, so that a branch or PR named after a ticket is linked to it (`[tracker] link_fallback` is `none`).
-- On the bridge's host, the sandbox instance: its own directory with a clone of this repository (pulled before each tick), the **staging** binary, its timer, the existing credentials, and the instance overlay `spl-asdlc.instance.toml` beside the clone's `spl-asdlc.toml`:
+- On the bridge's host, the sandbox instance: its own directory with a clone of this repository (pulled before each tick), the **staging** binary, its timer, the existing credentials, and the instance overlay `.spl-asdlc/config.instance.toml` beside the clone's `.spl-asdlc/config.toml`:
 
   ```toml
   schema = 1
@@ -36,7 +36,7 @@ REPO=<owner>/spl-asdlc-sandbox
 TEAM=<TEAM>                       # the tracker team key of the overlay
 P=spl-asdlc-sandbox               # [product] name
 # On the bridge's host:
-CFG=<the instance's clone>/spl-asdlc.toml
+CFG=<the instance's clone>/.spl-asdlc/config.toml
 LOG=<the instance's tick log>     # its --log, by default $XDG_STATE_HOME/spl-asdlc/<owner>-spl-asdlc-sandbox.jsonl
 ```
 
@@ -116,6 +116,9 @@ BRANCH=$(jq -r .data.issueCreate.issue.branchName issue.json)
 ### 2. Branch, implement, open the PR
 
 ```sh
+# The implementer starts the ticket: it moves it In Progress itself.
+lin 'mutation($id: String!, $s: String!) { issueUpdate(id: $id, input: {stateId: $s}) { success } }' \
+  "$(jq -n --arg id "$ID" --arg s "$(state_id "In Progress")" '{id: $id, s: $s}')"
 gh repo clone "$REPO" sandbox && cd sandbox
 git switch -c "$BRANCH"
 cat >> src/lib.rs <<'EOF'
@@ -152,9 +155,9 @@ gh pr create --repo "$REPO" --draft --title "feat: the sandbox says goodbye ($ID
   --body "$(jq -r .data.issueCreate.issue.url ../issue.json)"
 ```
 
-**Expected, next tick**: the PR is linked to the ticket (the tracker's integration); the bridge sets the ticket **In Progress**. On GitHub, `pr` runs `guards` and `rustfmt` on the draft (clippy and the tests wait for ready), `pr-title` passes.
+**Expected, next tick**: the PR is linked to the ticket (the tracker's integration). The PR is a draft, so the bridge writes nothing: the ticket stays **In Progress**, where its implementer put it (the bridge never moves a ticket In Progress for it). On GitHub, `pr` runs `guards` and `rustfmt` on the draft (clippy and the tests wait for ready), `pr-title` passes.
 
-Check: `show "$ID"` → In Progress; `gh pr checks --repo "$REPO" "$BRANCH"`; the tick log has the transition.
+Check: `show "$ID"` → In Progress; `gh pr checks --repo "$REPO" "$BRANCH"`; the tick log has no transition of the ticket.
 
 ### 3. Tick the boxes, mark the PR ready
 
@@ -168,7 +171,7 @@ gh pr ready --repo "$REPO" "$BRANCH"
 gh pr checks --repo "$REPO" "$BRANCH" --watch       # required-check green
 ```
 
-**Expected, next ticks** (no PR review: no round, no approval, `review.angles = []`): the ticket **In Review** while the PR waits, then the bridge **merges the PR**: a squash pinned to the head SHA, as the App, the branch deleted; the ticket goes **To Deploy** (a release cycle is configured, so a merged ticket waits for a release; never Done here). One merge per tick.
+**Expected, next ticks** (no PR review: no round, no approval, `review.angles = []`): the ticket goes **In Review** at the first tick that sees the PR ready, before its CI is green, then, once `required-check` is green, the bridge **merges the PR**: a squash pinned to the head SHA, as the App, the branch deleted; the ticket goes **To Deploy** (a release cycle is configured, so a merged ticket waits for a release; never Done here). One merge per tick.
 
 Check:
 

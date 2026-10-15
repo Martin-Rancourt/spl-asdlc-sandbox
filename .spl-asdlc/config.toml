@@ -1,10 +1,10 @@
-# spl-asdlc.toml: the configuration of the sandbox (spl-asdlc's
-# docs/spec/08-configuration.md), from the method's light template plus its
-# layer 2, the release cycle with its gate and no QA angle.
+# .spl-asdlc/config.toml: the configuration of the sandbox (spl-asdlc's
+# docs/reference/08-configuration.md), from the method's light template: no
+# PR review, and the release cycle with its gate and no QA angle.
 #
 # The method's shape only. The identities of the installation that runs the
 # bridge on this repository are in its instance overlay on that host
-# (`spl-asdlc.instance.toml`, ignored by git), never here: the repository
+# (`.spl-asdlc/config.instance.toml`, ignored by git), never here: the repository
 # slug (`product.repository`), the owner (`[owner]`), the tracker team, its
 # service identity and team keys (`tracker.team`, `tracker.service_identity`,
 # `tracker.team_keys`). A key set in both files is an error.
@@ -28,14 +28,14 @@ kind = "linear"                        # "linear" | "livela"
 # default branch.
 require_up_to_date = false
 # diff_size_extra_angle = 0            # changed lines above which diff_size_angle is added; 0 adds none
-# human_approval = "never"             # "never" | "sensitive-paths" | "always"
+# human_approval = "never"             # "never" | "always"
 
 # No PR review (spec 04 §11), an explicit choice: no PR gets an angle, and
 # each merges on its CI (contract complete, checks green, business-rule
 # guard) with no round and no approval.
 angles = []
 
-# The release cycle with its gate (spec 05; the template's layer 2). Merged
+# The release cycle with its gate (spec 05), which every project has. Merged
 # tickets wait To Deploy for a release; with `angles = []` the release has no
 # QA angle and its GO rests on the gate. The callers in .github/workflows/
 # pass the same tag patterns. The cut's `release prepare` writes each
@@ -53,4 +53,3 @@ angles = []                            # no QA angle
 # poll_minutes = 5
 # github_identity = "app"              # "app" | "token"
 # sweep_hours = 24
-# hands_off_label = "spl-asdlc:hands-off" # an item or PR carrying it is left to people

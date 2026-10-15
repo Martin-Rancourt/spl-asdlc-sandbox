@@ -14,7 +14,7 @@ name: release-cut
 # Cargo.lock and the CHANGELOG section, from the commits since the last
 # release), commits `chore(release): v<X.Y.Z>` and pushes the branch with
 # its first candidate, rc.1. It waits for no other workflow. The tag
-# patterns are those of spl-asdlc.toml.
+# patterns are those of .spl-asdlc/config.toml.
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ on:
         default: open
         required: true
       class:
-        description: '`routine` or `sensible`; empty computes it from .github/review-paths.json.'
+        description: '`routine` or `sensible`; empty computes it from the paths of the review angles in .spl-asdlc/config.toml.'
         type: choice
         options: ['', routine, sensible]
         default: ''
@@ -63,6 +63,7 @@ jobs:
       dry-run: ${{ inputs.dry_run == true }}
       candidate-tag: v{version}-rc.{rc}
       release-tag: v{version}
+      config-file: .spl-asdlc/config.toml
       spl-asdlc-repository: Martin-Rancourt/spl-asdlc
       # The method's sandbox runs the staging build, as its bridge does.
       spl-asdlc-version: staging
