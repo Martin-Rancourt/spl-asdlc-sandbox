@@ -9,8 +9,9 @@ name: pr
 # satisfied. The concurrency key holds the draft state, so the ready run
 # never cancels itself against the draft one. Every job of this file is a
 # need of `required-check`, and only the jobs listed in `may-skip` may be
-# skipped: the Rust jobs on a prose-only PR (guards reports no code) and,
-# for clippy and the tests, on drafts.
+# skipped: the Rust jobs on a prose-only PR (guards reports no code). A draft
+# PR is out of the flow: no job runs on it, `required-check` included, so a
+# draft costs no runner minute; marking it ready starts its CI.
 
 on:
   pull_request:
@@ -26,6 +27,7 @@ permissions:
 
 jobs:
   guards:
+    if: github.event.pull_request.draft == false
     permissions:
       contents: read
     uses: Martin-Rancourt/spl-asdlc/.github/workflows/asdlc-pr-guards.yml@main
@@ -42,7 +44,7 @@ jobs:
   fmt:
     name: rustfmt
     needs: guards
-    if: needs.guards.outputs.code == 'true'
+    if: github.event.pull_request.draft == false && needs.guards.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -61,7 +63,7 @@ jobs:
   clippy:
     name: clippy
     needs: guards
-    if: needs.guards.outputs.code == 'true' && github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && needs.guards.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -80,7 +82,7 @@ jobs:
   test:
     name: test
     needs: guards
-    if: needs.guards.outputs.code == 'true' && github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && needs.guards.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -97,7 +99,7 @@ jobs:
 
   required-check:
     name: required-check
-    if: always()
+    if: always() && github.event.pull_request.draft == false
     needs: [guards, fmt, clippy, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
