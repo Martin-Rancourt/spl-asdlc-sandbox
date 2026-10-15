@@ -155,7 +155,7 @@ gh pr create --repo "$REPO" --draft --title "feat: the sandbox says goodbye ($ID
   --body "$(jq -r .data.issueCreate.issue.url ../issue.json)"
 ```
 
-**Expected, next tick**: the PR is linked to the ticket (the tracker's integration). The PR is a draft, so the bridge writes nothing: the ticket stays **In Progress**, where its implementer put it (the bridge never moves a ticket In Progress for it). On GitHub, `pr` runs `guards` and `rustfmt` on the draft (clippy and the tests wait for ready), `pr-title` passes.
+**Expected, next tick**: the PR is linked to the ticket (the tracker's integration). The PR is a draft, so it is out of the flow: the bridge reads and writes nothing for it (its report says `waiting: pr#<n> it is a draft, out of the flow until it is marked ready`), and the ticket stays **In Progress**, where its implementer put it. On GitHub, of `pr` runs on a draft (each is skipped, `required-check` included, so a draft costs no runner minute; the bridge counts only a success, never a skipped check); `pr-title` passes.
 
 Check: `show "$ID"` → In Progress; `gh pr checks --repo "$REPO" "$BRANCH"`; the tick log has no transition of the ticket.
 
@@ -171,7 +171,7 @@ gh pr ready --repo "$REPO" "$BRANCH"
 gh pr checks --repo "$REPO" "$BRANCH" --watch       # required-check green
 ```
 
-**Expected, next ticks** (no PR review: no round, no approval, `review.angles = []`): the ticket goes **In Review** at the first tick that sees the PR ready, before its CI is green, then, once `required-check` is green, the bridge **merges the PR**: a squash pinned to the head SHA, as the App, the branch deleted; the ticket goes **To Deploy** (a release cycle is configured, so a merged ticket waits for a release; never Done here). One merge per tick.
+**Expected, next ticks** (no PR review: no round, no approval, `review.angles = []`): the ticket goes **In Review** at the first tick that sees the PR ready, before its CI is green, then, once `required-check` is green (the `ready_for_review` run), the bridge **merges the PR**: a squash pinned to the head SHA, as the App, the branch deleted, and its comment says the PR was green with no review angle and merged with no PR review (no "approved", no "up to date": `require_up_to_date` is false); the ticket goes **To Deploy** (a release cycle is configured, so a merged ticket waits for a release; never Done here). One merge per tick.
 
 Check:
 
@@ -210,7 +210,7 @@ git show "origin/$B:CHANGELOG.md" | awk '/^## \[/ {n++} n == 1'   # its section 
 gh run list --repo "$REPO" --workflow release-gate.yml --limit 1
 ```
 
-**Expected from the bridge, next ticks**: the **release issue** (its title names `spl-asdlc-sandbox` and the version), the candidate record, the label `release/spl-asdlc-sandbox-v<version>` on the release issue and on the embarked ticket `$ID`; once the gate is green, the **brief** on the release issue (the embarked ticket with its acceptance criteria, no business rule touched, the link to the gate's evidence, and that no QA angle is configured). No angle sub-item, no consolidation item.
+**Expected from the bridge, next ticks**: the **release issue** (its title names `spl-asdlc-sandbox` and the version), the candidate record, the label `release/spl-asdlc-sandbox-v<version>` on the release issue and on the embarked ticket `$ID`; once the gate is green, the **brief** on the release issue (the embarked ticket with its acceptance criteria, any PR of the range with no ticket under "No linked ticket", the link to the gate's evidence, and that no QA angle is configured; no business-rules section, since no rule file is touched), and the release issue's **Release note** filled in: no "*To be completed before publication.*" is left when the release is published. No angle sub-item, no consolidation item.
 
 ```sh
 spl-asdlc release status --file "$CFG" --product "$P"   # on the host: the GO and its inputs; exit 1 while there is no GO
@@ -234,11 +234,11 @@ git ls-remote --heads origin 'release/*'                           # empty
 
 ### 6. Closure
 
-**Expected, next tick** after the release is published and the merge back merged: the **closure**. The embarked ticket `$ID`, To Deploy with every box ticked, goes **Done**; the release note is posted; the release issue is closed with its summary, which says who published the release (the App). Then the **archiving**: the ticket Done, then the release issue last, both archived (searchable and restorable in Linear).
+**Expected, next tick** after the release is published and the merge back merged: the **closure**. The embarked ticket `$ID`, To Deploy with every box ticked, goes **Done**; the release note is posted, announcing the ticket and every PR of the range with no ticket (its `## Release note` section, or its title), merge backs and `chore(release)` left out; the release issue is closed with its summary, which says who published the release (the App). Then the **archiving**: the ticket Done, then the release issue last, both archived (searchable and restorable in Linear).
 
 ```sh
 show "$ID"                                              # Done, archivedAt set
-spl-asdlc release status --file "$CFG" --product "$P"   # the cycle is over
+spl-asdlc release status --file "$CFG" --product "$P"   # no cycle in flight: the last cycle closed with v<version> (exit 0)
 spl-asdlc tick --file "$CFG" --dry-run                  # nothing to do
 tail -n 30 "$LOG" | jq -c '{when, object, action, outcome}'
 ```
