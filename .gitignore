@@ -1,4 +1,4 @@
 /target/
 # The instance overlay lives on the bridge's host, never in the repository
-# (docs/spec/08-configuration.md of spl-asdlc, "The instance overlay").
-spl-asdlc.instance.toml
+# (docs/reference/08-configuration.md of spl-asdlc, "The instance overlay").
+.spl-asdlc/config.instance.toml
