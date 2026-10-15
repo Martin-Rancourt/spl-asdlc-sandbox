@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.4.0...v0.5.0) (2026-10-15)
+
+
+### Features
+
+* the sandbox waves (SID-1095) ([#11](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/11)) ([16655ba](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/16655baaaeadf58feb5b1e6e918e863f0934adab))
+
 ## [0.4.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.3.0...v0.4.0) (2026-10-15)
 
 
