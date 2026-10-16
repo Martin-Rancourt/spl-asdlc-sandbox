@@ -145,3 +145,28 @@ mod cheer_tests {
         assert_eq!(cheer(" "), "Cheers, world!");
     }
 }
+
+/// The welcome for `name`; a blank name welcomes the world.
+pub fn welcome(name: &str) -> String {
+    let name = name.trim();
+    if name.is_empty() {
+        "Welcome, world!".to_string()
+    } else {
+        format!("Welcome, {name}!")
+    }
+}
+
+#[cfg(test)]
+mod welcome_tests {
+    use super::welcome;
+
+    #[test]
+    fn welcomes_a_name() {
+        assert_eq!(welcome("sandbox"), "Welcome, sandbox!");
+    }
+
+    #[test]
+    fn a_blank_name_welcomes_the_world() {
+        assert_eq!(welcome(" "), "Welcome, world!");
+    }
+}
