@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.5.0...v0.6.0) (2026-10-16)
+
+
+### Features
+
+* the sandbox cheers (SID-1116) ([#15](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/15)) ([ca4963a](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/ca4963a4bf7dc0330b3f7d3641d4995870f5f281))
+
+
+### Documentation
+
+* the README lists the sandbox's functions (SID-1117) ([#17](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/17)) ([a66d146](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/a66d146874d2b87d6b7e90b535eafb922d08aed1))
+* the README says which checks CI runs ([#16](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/16)) ([d38c7a9](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/d38c7a9d8454281c8114808b4788819296821650))
+* **scenario:** drafts out of the flow, the note announces every PR ([#14](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/14)) ([6b7ac0e](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/6b7ac0ea1029664035e3a4c6fb1738f55bdb0569))
+
 ## [0.5.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.4.0...v0.5.0) (2026-10-15)
 
 
