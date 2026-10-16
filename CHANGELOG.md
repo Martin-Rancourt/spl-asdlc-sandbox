@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.6.0...v0.7.0) (2026-10-16)
+
+
+### Features
+
+* the sandbox welcomes (SID-1120) ([#18](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/issues/18)) ([2b76c8d](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/commit/2b76c8da5424438c482651e9a12664109b3dab67))
+
 ## [0.6.0](https://github.com/Martin-Rancourt/spl-asdlc-sandbox/compare/v0.5.0...v0.6.0) (2026-10-16)
 
 
