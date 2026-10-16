@@ -120,3 +120,28 @@ mod wave_tests {
         assert_eq!(wave(" "), "Hi, world!");
     }
 }
+
+/// The cheer for `name`; a blank name cheers the world.
+pub fn cheer(name: &str) -> String {
+    let name = name.trim();
+    if name.is_empty() {
+        "Cheers, world!".to_string()
+    } else {
+        format!("Cheers, {name}!")
+    }
+}
+
+#[cfg(test)]
+mod cheer_tests {
+    use super::cheer;
+
+    #[test]
+    fn cheers_a_name() {
+        assert_eq!(cheer("sandbox"), "Cheers, sandbox!");
+    }
+
+    #[test]
+    fn a_blank_name_cheers_the_world() {
+        assert_eq!(cheer(" "), "Cheers, world!");
+    }
+}
