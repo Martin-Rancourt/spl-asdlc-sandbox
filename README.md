@@ -17,6 +17,8 @@ Nothing is published from here: the publication job of a release only prints the
 
 ## Develop
 
+The three checks CI runs on every ready PR, in the same order:
+
 ```sh
 cargo fmt --all --check
 cargo clippy --all-targets --locked -- -D warnings
